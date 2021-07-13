@@ -5,12 +5,35 @@ module_path
 
 Provided functions
 
+  * files - importlib.resources files this function is the standard for retrieving resources for Python 3.9+
+  * as_file - context manager for retrieving a true filepath for Python 3.9+.
   * my_dir - Return the directory this module is in. This should exist even in an executable.
   * my_path - Return the path to the module that called this method. This may not exist in an executable
 
 
 Example
 =======
+
+.. code-block:: python
+
+    # my_interface.py
+    # sdl2 with sld2.dll in package
+    # File Structure:
+    #     my_sdl/
+    #         sdl2_dll_path/
+    #             SDL2.dll
+    #         __init__.py
+    #         my_interface.py
+    import os
+    from module_path import files, as_file
+
+    with as_file(files('my_sdl').joinpath('sdl2_dll_path/SDL2.dll')) as sdl_path:
+        os.environ.setdefault('PYSDL2_DLL_PATH', os.path.dirname(str(sdl_path)))
+        import sdl2
+
+    # Use sdl2
+    assert sdl2 is not None
+
 
 .. code-block::
 

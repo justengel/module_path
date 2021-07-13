@@ -22,21 +22,66 @@ Notes:
 import os
 import sys
 import inspect
+import contextlib
 
-# filepath = vars().get('__file__', getattr(sys, '_MEIPASS', os.path.dirname(sys.executable)))
-# print(filepath)
+try:
+    from importlib.resources import files, as_file
+    from importlib.abc import Traversable
+except (ImportError, Exception):
+    try:
+        from importlib_resources import files, as_files
+        from importlib_resources.abc import Traversable
+    except (ImportError, Exception):
+        import inspect
+        from pathlib import Path
+        Traversable = Path
 
-# try:
-#     THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-#     HELP_DIR = os.path.join(THIS_DIR, 'help')
-#     if not os.path.exists(HELP_DIR):
-#         raise EnvironmentError('Frozen executable does not have help dir')
-# except (EnvironmentError, NameError, Exception):
-#     THIS_DIR = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
-#     HELP_DIR = os.path.join(THIS_DIR, 'help')
+        def files(module):
+            if isinstance(module, str):
+                if '.' in module:
+                    # Import the top level package and manually add a directory for each "."
+                    toplvl, remain = module.split('.', 1)
+                else:
+                    toplvl, remain = module, ''
+
+                # Get or import the module
+                try:
+                    module = sys.modules[toplvl]
+                    path = Path(inspect.getfile(module))
+                except (KeyError, Exception):
+                    try:
+                        module = __import__(toplvl)
+                        path = Path(inspect.getfile(module))
+                    except (ImportError, Exception):
+                        module = toplvl
+                        path = Path(module)
+
+                # Get the path of the module
+                if path.with_suffix('').name == '__init__':
+                    path = path.parent
+
+                # Find the path from the top level module
+                for pkg in remain.split('.'):
+                    path = path.joinpath(pkg)
+            else:
+                path = Path(inspect.getfile(module))
+            if path.with_suffix('').name == '__init__':
+                path = path.parent
+            return path
+
+        @contextlib.contextmanager
+        def as_file(path):
+            p = str(path)
+            if not os.path.exists(p):
+                p = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(sys.executable)), str(path))
+            if not os.path.exists(p):
+                p = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(sys.executable)), '', str(path))
+
+            yield p
 
 
-__all__ = ['my_path', 'my_dir',
+__all__ = ['files', 'as_file', 'Traversable',
+           'my_path', 'my_dir',
            'isfile', 'isdir', 'isabs', 'dirname', 'basename', 'join', 'exists', 'abspath', 'relpath', 'realpath',
            ]
 
