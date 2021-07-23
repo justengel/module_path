@@ -1,6 +1,9 @@
-===========
-module_path
-===========
+========================
+(DEPRECATED) module_path
+========================
+
+Python does not use filenames anymore to support reading from a zip file.
+This library is deprecated and has been removed from pypi.
 
 
 Provided functions
